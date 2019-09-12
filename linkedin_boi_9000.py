@@ -5,6 +5,7 @@ import pdb
 import re
 import os
 import random
+import logging
 import time
 
 linkedin_quotes = ["How have you been?", "Please keep in touch", "I will", "Will do", "Thanks", "Done", "Please check", "Thank you very much", 
@@ -12,7 +13,7 @@ linkedin_quotes = ["How have you been?", "Please keep in touch", "I will", "Will
 "Oh...","Hmm", "Goodbye", "Thank you", "You too", "Good night", "Take care", "See you soon", "Regards", "Resume", "Thanks for sharing", 
 "I'll get back to you", "Haha", "Just kidding", "How about you?", "Where are you these days?", "Where are you now?", "How's life", 
 "Keep in touch", "I'm good", "Take care", "See you soon", "Long time no see", "Hope all is well", "How are you?", "Hey, *insert your name here*", 
-"Thanks for reaching out", "How can I help you?"]
+"Thanks for reaching out", "How can I help you?", "You say...", "???", "??", "Busy?", "Hi", "I am good"]
 
 def bot_login():
 	r = praw.Reddit(username = config.username, 
@@ -34,7 +35,6 @@ def run_bot():
             comments_replied_to = comments_replied_to.split("\n")
             comments_replied_to = list(filter(None, comments_replied_to))
     for comment in user.comments.new():
-        time.sleep(5)
         if comment.id not in comments_replied_to:
             try: 
                 print(comment.body)
@@ -61,22 +61,31 @@ def run_bot():
                      --XXXXXXXXXXXXXXXXXX-)""")
                 else:
                 	comment.reply(linkedin_quotes[random.randint(0, len(linkedin_quotes)-1)])
+                	write_comment_id_to_file(comment.id)
                 comments_replied_to.append(comment.id)
             except praw.exceptions.APIException as e:
+                logging.error("API exception ({})".format(str(e)))
                 if e.error_type == 'DELETED_COMMENT':
-                    print("Comment " + comment.id + " was deleted")
+                    logging.error("Comment " + comment.id + " was deleted")
                     comments_replied_to.append(comment.id)
                 elif e.error_type == 'RATELIMIT':
-                	print(e)
-                	print("ratelimit exception oops time to become a sleepy boi")
-                	break
-                else:
+                    #@spencer-p code
+                    sleep_minutes = 0
+                    minutes_match = re.search(r'([0-9]+) minutes', str(e))
+                    if minutes_match:
+                        sleep_minutes = int(minutes_match.group(1))
+                    print("ratelimit exception oops time to become a sleepy boi")
+                    time.sleep(((sleep_minutes+1)*60))
                     comment.reply(linkedin_quotes[random.randint(0, len(linkedin_quotes)-1)])
-                    print(e)
+                    write_comment_id_to_file(comment.id)
                     comments_replied_to.append(comment.id)
-        with open("comments_replied_to.txt", "w") as f:
-            for comment_id in comments_replied_to:
-                f.write(comment_id + "\n")
+                else:
+                    write_comment_id_to_file(comment.id)
+                    comments_replied_to.append(comment.id)
+
+def write_comment_id_to_file(comment_id):
+    with open("comments_replied_to.txt", "a") as f:
+        f.write(comment_id + "\n")
 
 if __name__ == "__main__":
     r = bot_login()
