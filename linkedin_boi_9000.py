@@ -24,7 +24,7 @@ def bot_login():
 	return r
 
 def run_bot():
-    user = r.redditor('dood1337')
+    user = r.redditor('vinram925')
     if not os.path.isfile("comments_replied_to.txt"):
         comments_replied_to = []
     # If we have run the code before, load the list of comments we have replied to
@@ -34,7 +34,7 @@ def run_bot():
             comments_replied_to = f.read()
             comments_replied_to = comments_replied_to.split("\n")
             comments_replied_to = list(filter(None, comments_replied_to))
-    for comment in user.comments.new():
+    for comment in user.comments.new(limit=None):
         if comment.id not in comments_replied_to:
             try: 
                 print(comment.body)
@@ -79,6 +79,16 @@ def run_bot():
                     comment.reply(linkedin_quotes[random.randint(0, len(linkedin_quotes)-1)])
                     write_comment_id_to_file(comment.id)
                     comments_replied_to.append(comment.id)
+                elif e.error_type == 'TOO_OLD':
+                    print("""
+								 d888b   .d8b.  .88b  d88. d88888b    .d88b.  db    db d88888b d8888b.
+								88' Y8b d8' `8b 88'YbdP`88 88'       .8P  Y8. 88    88 88'     88  `8D
+								88      88ooo88 88  88  88 88ooooo   88    88 Y8    8P 88ooooo 88oobY'
+								88  ooo 88~~~88 88  88  88 88~~~~~   88    88 `8b  d8' 88~~~~~ 88`8b  
+								88. ~8~ 88   88 88  88  88 88.       `8b  d8'  `8bd8'  88.     88 `88.
+								 Y888P  YP   YP YP  YP  YP Y88888P    `Y88P'     YP    Y88888P 88   YD""")
+                    write_comment_id_to_file(comment.id)
+                    break
                 else:
                     write_comment_id_to_file(comment.id)
                     comments_replied_to.append(comment.id)
